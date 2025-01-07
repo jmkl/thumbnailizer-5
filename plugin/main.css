@@ -1,0 +1,63 @@
+body{
+    padding: 5px;
+}
+.content{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+}
+.btn-clear{
+   width: 100%;
+   cursor: pointer;
+
+   padding: 10px;
+   color:white;
+   font-size: .7rem;
+   border-radius: 10px;
+   text-align: center;
+   background-color: #121212;
+}
+.btn-clear:hover{
+    background-color: #505050;
+    
+}
+.btn-clear:active {
+    background-color: #634913;
+
+}
+.status-img{
+    z-index: 10;
+    opacity: 10%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    width: 50%;
+    height: auto;
+}
+.logger{
+    width: 100%;
+    height: 85vh;
+    display: block;
+    color: white;
+    overflow-y:scroll ;
+}
+.logger > div{
+    cursor: pointer;
+    
+    padding: 2px 4px;
+
+}
+.logger > div:hover{
+   background-color: #634913!important;
+
+}
+.truncate{
+    text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+}
+.logger>div:nth-child(odd) {
+   background-color: #242424;
+}
