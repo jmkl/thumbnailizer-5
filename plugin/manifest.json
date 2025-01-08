@@ -3,13 +3,25 @@
   "name": "Thumbanailizer 5",
   "version": "1.0.0",
   "main": "index.html",
-  "manifestVersion": 4,
+  "manifestVersion": 5,
   "host": [
     {
       "app": "PS",
       "minVersion": "23.0.0"
     }
   ],
+  "requiredPermissions": {
+    "localFileSystem": "fullAccess",
+    "clipboard": "readAndWrite",
+    "network": {
+      "domains": "all"
+    },
+    "allowCodeGenerationFromStrings": true,
+    "launchProcess": {
+      "schemes": ["http", "https"],
+      "extensions": [".svg", ".png"]
+    }
+  },
   "entrypoints": [
     {
       "type": "panel",

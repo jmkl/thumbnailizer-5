@@ -1,10 +1,10 @@
-import { FOLDERNAME, TOKEN } from "./Model";
+import { FolderName, TOKEN } from "./Model";
 import { storage } from "uxp";
 const fs = storage.localFileSystem;
 // const fs = require("uxp").storage.localFileSystem;
 
 export class Token {
-  rootFolder: storage.Entry;
+  rootFolder: storage.Folder;
   constructor() {}
   async getRootFolder() {
     const result = await this.getTokenFor(TOKEN.ROOTFOLDER);
@@ -33,14 +33,14 @@ export class Token {
       }
     });
   }
-  getTokenFor(key: string): Promise<storage.Entry> {
+  getTokenFor(key: string): Promise<storage.Folder> {
     const savedToken = localStorage.getItem(key);
     if (!savedToken) {
       return null;
     }
     return new Promise(async (resolve, reject) => {
       const newToken = await fs.getEntryForPersistentToken(savedToken);
-      newToken.isFolder ? resolve(newToken) : resolve(null);
+      newToken.isFolder ? resolve(newToken as storage.Folder) : resolve(null);
     });
   }
 }

@@ -7,25 +7,7 @@ body{
     width: 100%;
     height: 100vh;
 }
-.btn-clear{
-   width: 100%;
-   cursor: pointer;
 
-   padding: 10px;
-   color:white;
-   font-size: .7rem;
-   border-radius: 10px;
-   text-align: center;
-   background-color: #121212;
-}
-.btn-clear:hover{
-    background-color: #505050;
-    
-}
-.btn-clear:active {
-    background-color: #634913;
-
-}
 .status-img{
     z-index: 10;
     opacity: 10%;
@@ -60,4 +42,11 @@ body{
 }
 .logger>div:nth-child(odd) {
    background-color: #242424;
+}
+.footer{
+    display: flex;
+    flex-direction: row;
+}
+.footer>sp-action-button,sp-checkbox{
+    margin-left:10px ;
 }

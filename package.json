@@ -2,13 +2,12 @@
   "name": "thumbnailizer-5.0",
   "version": "1.0.0",
   "author": "jmkl",
-  "main": "index.js",
   "description": "",
   "keywords": [],
   "license": "MIT",
   "scripts": {
     "build": "webpack",
-    "watch": "webpack -w"
+    "watch": "webpack -w --mode development"
   },
   "devDependencies": {
     "@types/photoshop": "^25.0.4",

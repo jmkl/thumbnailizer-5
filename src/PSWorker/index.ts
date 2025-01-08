@@ -4,6 +4,14 @@ import { AdjustmentLayer, AlignLayer, HotkeyToken, TagVert } from "./Model";
 import { performAlignLayer } from "./performAlignLayer";
 import { performAdjustmentLayer } from "./performAdjustmentLayer";
 import { performAlignSelectedLayers } from "./performAlignSelectedLayers";
+import { storage } from "uxp";
+import { placeBufferToLayer } from "./placeBufferToLayer";
+import { FolderName } from "../Model";
+import ExecScript from "./ScriptExecutor";
+import { ServerSocket } from "../ServerSocket";
+import Logger from "../Logger";
+import { appendLinkedObject } from "./appendLinkedObject";
+import { currentLayerToSmartObject } from "./currentLayerToSmartObject";
 
 export type SocketServerData = {
   fromserver: boolean;
@@ -12,25 +20,100 @@ export type SocketServerData = {
 };
 export class PSWorker {
   withTag: false;
-  constructor() {}
-  do(content: SocketServerData) {
-    console.log(content);
+  rootFolder: storage.Folder;
+  customScripts: string[];
+  customScriptFolder: storage.Folder;
+  smartObjectFolder: storage.Folder;
+  scriptExecutor;
+  logger: Logger;
+  serverSocket: ServerSocket;
+  constructor() {
+    this.scriptExecutor = new ExecScript();
+  }
+  bind(server: ServerSocket, logger: Logger) {
+    this.serverSocket = server;
+    this.logger = logger;
+  }
+  async setRootFolder(folder: storage.Folder) {
+    this.rootFolder = folder;
+    this.customScriptFolder = (await folder.getEntry(
+      FolderName.customscripts
+    )) as storage.Folder;
+    this.smartObjectFolder = (await folder.getEntry(
+      FolderName.smartobject
+    )) as storage.Folder;
+
+    this.customScripts = (await this.customScriptFolder.getEntries())
+      .reduce((acc, ext) => {
+        if (ext.name.endsWith(".js")) acc.push(ext);
+        return acc;
+      }, [])
+      .map((cs) => cs.name);
+
+    this.scriptExecutor.initHelper(this.customScriptFolder);
+  }
+  async do(content: SocketServerData) {
+    this.logger.warn("executing " + content.type);
     switch (content.type) {
       case "leonardo":
+        const leonardo_path = await this.rootFolder.getEntry(
+          FolderName.leonardo
+        );
+        placeBufferToLayer(content.data, leonardo_path as storage.Folder);
+
         break;
       case "customscript":
+        const result = this.customScripts.filter((cs) => {
+          return content.data.includes(cs);
+        });
+
+        if (result.length > 0) {
+          this.scriptExecutor
+            .executeCustomScripts(result[0], this.customScriptFolder)
+            .then((result) => {
+              if (this.serverSocket) {
+                this.serverSocket.sendMessage({
+                  fromserver: false,
+                  type: "execute_customscript",
+                  data: "notif",
+                });
+              }
+            });
+        }
+
         break;
       case "fromcomfy":
         break;
       case "todo_clipboard":
         break;
       case "generate_flag":
-        break;
       case "create_emblem":
-        break;
       case "create_tag":
+        this.rootFolder
+          .getEntry(FolderName.gigapixel)
+          .then((ggp: storage.Folder) => {
+            setTimeout(async () => {
+              const namafile = content?.data?.split(/[\/\\]+/).pop();
+              const _fileentry = (await ggp
+                .getEntry(namafile)
+                .catch((e) => console.log(e))) as storage.File;
+              await appendLinkedObject(_fileentry, namafile);
+            }, 500);
+          });
         break;
       case "create_smartobject":
+        const name = content.data;
+        const new_name = await currentLayerToSmartObject(
+          this.smartObjectFolder,
+          name
+        );
+        if (this.serverSocket) {
+          this.serverSocket.sendMessage({
+            fromserver: false,
+            type: "create_thumb",
+            data: new_name,
+          });
+        }
         break;
       case "process_rawfilter":
         break;
