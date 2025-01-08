@@ -18,5 +18,7 @@ export class AppCore extends PSEventEmitter {
       ["set", "select", "save", "neuralGalleryFilters"],
       this.actionListener
     );
+
+    return this;
   }
 }

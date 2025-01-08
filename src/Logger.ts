@@ -18,11 +18,19 @@ export default class Logger {
     if (!this.enable) return;
     const log = document.createElement("div");
     log.style.color = color;
+
     log.textContent =
       typeof text == "string" ? text : JSON.stringify(text, null, 2);
     log.classList.add("truncate");
+
     log.addEventListener("click", (e) => {
-      log.classList.remove("truncate");
+      if (log.classList.contains("truncate")) {
+        log.classList.remove("truncate");
+        log.style.whiteSpace = "pre";
+      } else {
+        log.classList.add("truncate");
+        log.style.whiteSpace = "";
+      }
     });
     this.logger.appendChild(log);
   }

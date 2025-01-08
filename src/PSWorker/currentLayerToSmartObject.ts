@@ -11,42 +11,52 @@ export async function currentLayerToSmartObject(
 
   if (!layer) return;
   const all_smartobject = await so_token.getEntries();
-  const outfile_path = await core.executeAsModal(
-    async () => {
-      const new_name = await findSmartObjectName(all_smartobject, file_name);
+  const outfile_path = await core
+    .executeAsModal(
+      async () => {
+        const new_name = await findSmartObjectName(all_smartobject, file_name);
 
-      layer.name = new_name;
+        layer.name = new_name;
 
-      const new_so = await so_token.createFile(new_name, { overwrite: false });
-      const new_session = fs.createSessionToken(new_so);
-      const result = await app.batchPlay(
-        [
-          {
-            _obj: "newPlacedLayer",
-          },
-          {
-            _obj: "placedLayerConvertToLinked",
-            _target: [
+        try {
+          const new_so = await so_token.createFile(new_name, {
+            overwrite: false,
+          });
+          const new_session = fs.createSessionToken(new_so);
+          const result = await app.batchPlay(
+            [
               {
-                _ref: "layer",
-                _enum: "ordinal",
-                _value: "targetEnum",
+                _obj: "newPlacedLayer",
+              },
+              {
+                _obj: "placedLayerConvertToLinked",
+                _target: [
+                  {
+                    _ref: "layer",
+                    _enum: "ordinal",
+                    _value: "targetEnum",
+                  },
+                ],
+                using: {
+                  _path: new_session,
+                  _kind: "local",
+                },
               },
             ],
-            using: {
-              _path: new_session,
-              _kind: "local",
-            },
-          },
-        ],
-        {}
-      );
-
-      const filepath = findNestedObject(result, "_path");
-      return filepath?._path;
-    },
-    { commandName: "layer name" }
-  );
+            {}
+          );
+          console.log(result);
+          const filepath = findNestedObject(result, "_path");
+          console.log(filepath);
+          return filepath?._path;
+        } catch (error) {
+          console.error(error);
+        }
+      },
+      { commandName: "layer name" }
+    )
+    .catch((e) => console.error(e));
+  console.log(outfile_path);
   return outfile_path;
 }
 function findSmartObjectName(

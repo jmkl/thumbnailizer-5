@@ -8,31 +8,23 @@ body{
     height: 100vh;
 }
 
-.status-img{
-    z-index: 10;
-    opacity: 10%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%);
-    width: 50%;
-    height: auto;
-}
+
 .logger{
     width: 100%;
     height: 85vh;
     display: block;
     color: white;
-    overflow-y:scroll ;
+    overflow-y:auto ;
 }
 .logger > div{
     cursor: pointer;
-    
+    border-bottom: solid 1px #555;
     padding: 2px 4px;
+ 
 
 }
 .logger > div:hover{
-   background-color: #634913!important;
+   background-color: #666!important;
 
 }
 .truncate{
@@ -40,13 +32,57 @@ body{
         white-space: nowrap;
         overflow: hidden;
 }
-.logger>div:nth-child(odd) {
-   background-color: #242424;
-}
+
 .footer{
-    display: flex;
+    width: 100%;
+
+    display: flex; 
+    justify-items: center;
     flex-direction: row;
 }
-.footer>sp-action-button,sp-checkbox{
-    margin-left:10px ;
+.spacer{
+    flex:1 0 auto;
+}
+.btn-clear{
+    cursor: pointer;
+    width: 18px;
+    fill:#fff;
+    font-family: monospace;
+    margin-left: 4px;
+}
+.btn-clear:hover{
+    fill:#fd0;
+    margin-left: 14px;
+}
+.btn-clear:active {
+    fill: #333;
+}
+.status-text{
+    margin-left: 10px;
+    font-family: "Montserrat-Black","Times New Roman";
+    color:#f00;
+    justify-self: end;
+    font-size: 1rem;
+    text-align: right;
+    font-weight: 900;
+}
+.status-img {
+    z-index: 10;
+    opacity: 10%;
+    width: 20px;
+    height: 20px;
+}
+.emoji{
+    position: absolute;
+    width: 90%;
+    height: 90%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50% ,-50%);
+    fill: #444;
+    opacity: 0.5;
+    z-index: -1;
+}
+.hidden{
+    visibility: hidden;
 }

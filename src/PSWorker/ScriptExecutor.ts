@@ -2,10 +2,12 @@ import { core, app, action, constants, imaging } from "photoshop";
 import { ExecutionContext } from "photoshop/dom/CoreModules";
 import Sval from "sval";
 import { storage } from "uxp";
+import Logger from "../Logger";
 
 export default class ExecScript {
   interpreter: Sval;
-  constructor() {
+
+  constructor(logger: Logger) {
     this.interpreter = new Sval({
       ecmaVer: 9,
       sandBox: false,
@@ -17,6 +19,7 @@ export default class ExecScript {
       photoshop: require("photoshop"),
       app: require("photoshop").app,
       core: require("photoshop").core,
+      logger: logger,
       batchPlay: require("photoshop").action.batchPlay,
       executeAsModal: require("photoshop").core.executeAsModal,
       executeModal: this.executeModal,

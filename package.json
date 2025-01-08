@@ -6,12 +6,13 @@
   "keywords": [],
   "license": "MIT",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --mode production",
     "watch": "webpack -w --mode development"
   },
   "devDependencies": {
     "@types/photoshop": "^25.0.4",
     "copy-webpack-plugin": "^12.0.2",
+    "terser-webpack-plugin": "^5.3.11",
     "ts-loader": "^9.5.1",
     "typescript": "^5.7.2",
     "uxp-types": "^0.1.3",

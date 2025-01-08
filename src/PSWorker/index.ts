@@ -27,13 +27,12 @@ export class PSWorker {
   scriptExecutor;
   logger: Logger;
   serverSocket: ServerSocket;
-  constructor() {
-    this.scriptExecutor = new ExecScript();
-  }
-  bind(server: ServerSocket, logger: Logger) {
-    this.serverSocket = server;
+  constructor(server: ServerSocket, logger: Logger) {
     this.logger = logger;
+    this.scriptExecutor = new ExecScript(logger);
+    this.serverSocket = server;
   }
+
   async setRootFolder(folder: storage.Folder) {
     this.rootFolder = folder;
     this.customScriptFolder = (await folder.getEntry(
@@ -53,7 +52,6 @@ export class PSWorker {
     this.scriptExecutor.initHelper(this.customScriptFolder);
   }
   async do(content: SocketServerData) {
-    this.logger.warn("executing " + content.type);
     switch (content.type) {
       case "leonardo":
         const leonardo_path = await this.rootFolder.getEntry(
@@ -96,7 +94,7 @@ export class PSWorker {
               const namafile = content?.data?.split(/[\/\\]+/).pop();
               const _fileentry = (await ggp
                 .getEntry(namafile)
-                .catch((e) => console.log(e))) as storage.File;
+                .catch((e) => console.error(e))) as storage.File;
               await appendLinkedObject(_fileentry, namafile);
             }, 500);
           });
@@ -109,8 +107,8 @@ export class PSWorker {
         );
         if (this.serverSocket) {
           this.serverSocket.sendMessage({
-            fromserver: false,
             type: "create_thumb",
+            fromserver: false,
             data: new_name,
           });
         }
@@ -151,7 +149,6 @@ export class PSWorker {
   }
 
   async doHotkeys(params: string) {
-    console.log("params");
     const tagvert = { tag: this.withTag, vertical_align: false };
 
     switch (params) {
