@@ -13,5 +13,5 @@ photoshop plugin for my macropad
 
 ```
 bun install
-bun run es:watch
+bun run watch
 ```

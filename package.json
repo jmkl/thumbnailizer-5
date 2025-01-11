@@ -6,22 +6,15 @@
   "keywords": [],
   "license": "MIT",
   "scripts": {
-    "es:build": "bun build.mjs production && uxp plugin package --manifest .\\dist\\manifest.json --outputPath .\\build",
-    "es:watch": "bun build.mjs",
-    "build": "webpack --mode production",
-    "watch": "webpack -w --mode development"
+    "build": "bun build.mjs production && uxp plugin package --manifest .\\dist\\manifest.json --outputPath .\\build",
+    "watch": "bun build.mjs"
   },
   "devDependencies": {
     "@types/photoshop": "^25.0.4",
-    "copy-webpack-plugin": "^12.0.2",
     "esbuild": "^0.24.2",
     "esbuild-plugin-tsc": "^0.4.0",
-    "terser-webpack-plugin": "^5.3.11",
-    "ts-loader": "^9.5.1",
     "typescript": "^5.7.2",
-    "uxp-types": "^0.1.3",
-    "webpack": "^5.97.1",
-    "webpack-cli": "^6.0.1"
+    "uxp-types": "^0.1.3"
   },
   "dependencies": {
     "sval": "^0.5.6"
