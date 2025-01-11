@@ -16,6 +16,7 @@ export enum FolderName {
   template = "template",
   texture = "texture",
   comfyui = "ComfyUI",
+  comfyui2024 = "ComfyUI2024",
   leonardo = "leonardo",
 }
 

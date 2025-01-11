@@ -6,12 +6,14 @@ import Logger from "../Logger";
 
 export default class ExecScript {
   interpreter: Sval;
+  logger;
 
   constructor(logger: Logger) {
     this.interpreter = new Sval({
       ecmaVer: 9,
       sandBox: false,
     });
+    this.logger = logger;
     this.interpreter.import({
       uxp: require("uxp"),
       os: require("os"),
@@ -60,7 +62,7 @@ export default class ExecScript {
     return new Promise(async (resolve, reject) => {
       if (value) {
         const script = (await folder.getEntry(value)) as storage.File;
-        this.initHelper(folder);
+        //this.initHelper(folder);
 
         const read_script = (await script.read({
           format: storage.formats.utf8,
@@ -74,9 +76,12 @@ export default class ExecScript {
     funcName: (executionContext: ExecutionContext, descriptor?: object) => any,
     tagName: string
   ) {
-    console.log("execute as modal");
-
-    await core.executeAsModal(funcName, { commandName: tagName });
+    this.logger.warn("execute as modal");
+    try {
+      await core.executeAsModal(funcName, { commandName: tagName });
+    } catch (error) {
+      this.logger.fatal(error);
+    }
   }
   async getAllLayers() {
     const layers = await app.batchPlay(

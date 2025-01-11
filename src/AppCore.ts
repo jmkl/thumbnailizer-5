@@ -8,17 +8,15 @@ export class AppCore extends PSEventEmitter {
     this.actionListener = this.actionListener.bind(this);
   }
   actionListener(eventname: string, descriptor: ActionDescriptor) {
-    if (["set", "select"].includes(eventname)) {
-      this.emit(PSEvent.SETSELECT, JSON.stringify(descriptor, null, 2));
+    if (!descriptor._isCommand) {
+      if (eventname === "set" || eventname === "select") {
+        this.emit(PSEvent.SETSELECT, eventname);
+      }
     }
   }
 
   listen() {
-    action.addNotificationListener(
-      ["set", "select", "save", "neuralGalleryFilters"],
-      this.actionListener
-    );
-
+    action.addNotificationListener(["set", "select"], this.actionListener);
     return this;
   }
 }

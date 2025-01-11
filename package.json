@@ -1,17 +1,21 @@
 {
   "name": "thumbnailizer-5.0",
-  "version": "1.0.0",
+  "version": "0.5.0",
   "author": "jmkl",
   "description": "",
   "keywords": [],
   "license": "MIT",
   "scripts": {
+    "es:build": "bun build.mjs production && uxp plugin package --manifest .\\dist\\manifest.json --outputPath .\\build",
+    "es:watch": "bun build.mjs",
     "build": "webpack --mode production",
     "watch": "webpack -w --mode development"
   },
   "devDependencies": {
     "@types/photoshop": "^25.0.4",
     "copy-webpack-plugin": "^12.0.2",
+    "esbuild": "^0.24.2",
+    "esbuild-plugin-tsc": "^0.4.0",
     "terser-webpack-plugin": "^5.3.11",
     "ts-loader": "^9.5.1",
     "typescript": "^5.7.2",

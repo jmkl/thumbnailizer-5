@@ -134,3 +134,48 @@ export type TagVert = {
   tag: boolean;
   vertical_align: boolean;
 };
+
+export type Template = {
+  template_name: string;
+  lines: Line[];
+};
+
+export type Line = {
+  index: number;
+  value: string;
+  state: LineState;
+};
+
+export enum LineState {
+  NORMAL = 0,
+  EMBLEM = 1,
+  TAG = 2,
+  ALT = 3,
+}
+
+export type SocketServerData = {
+  fromserver: boolean;
+  type: string;
+  data: string;
+  template_index?: number;
+  uuid?: string;
+  channel?: string;
+};
+
+export type SelectionBound = {
+  top: number;
+  bottom: number;
+  right: number;
+  left: number;
+};
+
+export type RectSelection = {
+  mode: boolean;
+  bound: SelectionBound;
+};
+
+export type LinkedObject = {
+  type: string;
+  name: string;
+  category: string;
+};

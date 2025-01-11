@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "main": "index.html",
   "manifestVersion": 5,
+  "featureFlags": {
+    "enableAlerts": true
+  },
   "host": [
     {
       "app": "PS",

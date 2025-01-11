@@ -8,6 +8,13 @@ body{
     height: 100vh;
 }
 
+.loading{
+width: 100%;
+position: absolute;
+display: block;
+z-index: 100;
+}
+
 
 .logger{
     width: 100%;

@@ -1,6 +1,14 @@
 import { action, core } from "photoshop";
 import { createNewDocument } from "./createNewDocument";
-import { AdjustmentLayer, AlignLayer, HotkeyToken, TagVert } from "./Model";
+import {
+  AdjustmentLayer,
+  AlignLayer,
+  HotkeyToken,
+  LinkedObject,
+  SelectionBound,
+  SocketServerData,
+  TagVert,
+} from "./Model";
 import { performAlignLayer } from "./performAlignLayer";
 import { performAdjustmentLayer } from "./performAdjustmentLayer";
 import { performAlignSelectedLayers } from "./performAlignSelectedLayers";
@@ -11,21 +19,35 @@ import ExecScript from "./ScriptExecutor";
 import { ServerSocket } from "../ServerSocket";
 import Logger from "../Logger";
 import { appendLinkedObject } from "./appendLinkedObject";
-import { currentLayerToSmartObject } from "./currentLayerToSmartObject";
+import { currentLayerToSmartObject } from "./currentLayerToLinkedSmartObject";
+import { performSavingFile } from "./performSavingFile";
+import { performApplyTemplate } from "./performApplyTemplate";
+import { executeSuspendHistory } from "./executeSuspendHistory";
+import { performCreateEmblemAndTag } from "./performCreateEmblemAndTag";
+import { performRawFilterEffects, RawFilter } from "./performRawFilterEffects";
+import { appendLinkedObjectWithSelection } from "./appendLinkedObjectWithSelection";
+import { selectionToImagePicker } from "./selectionToImagePicker";
+import { multiGet } from "./multiGet";
+import { getAllTags } from "./getAllTags";
+import { performApplyColor, removeGuides } from "./performApplyColor";
+import { showLoading } from "./showLoading";
 
-export type SocketServerData = {
-  fromserver: boolean;
-  type: string;
-  data: string;
-};
 export class PSWorker {
-  withTag: false;
+  withTag: boolean = false;
   rootFolder: storage.Folder;
   customScripts: string[];
   customScriptFolder: storage.Folder;
+  templatesFolder: storage.Folder;
   smartObjectFolder: storage.Folder;
+  gigaPixelFolder: storage.Folder;
+  textureFolder: storage.Folder;
+  comfyuiInputFolder: storage.Folder;
+  comfyuiOutputFolder: storage.Folder;
   scriptExecutor;
   logger: Logger;
+  guideTimer: NodeJS.Timeout;
+  selectionBounds: SelectionBound = { top: 0, left: 0, bottom: 0, right: 0 };
+
   serverSocket: ServerSocket;
   constructor(server: ServerSocket, logger: Logger) {
     this.logger = logger;
@@ -35,12 +57,38 @@ export class PSWorker {
 
   async setRootFolder(folder: storage.Folder) {
     this.rootFolder = folder;
+
     this.customScriptFolder = (await folder.getEntry(
       FolderName.customscripts
     )) as storage.Folder;
+
+    this.templatesFolder = (await folder.getEntry(
+      FolderName.template
+    )) as storage.Folder;
+
     this.smartObjectFolder = (await folder.getEntry(
       FolderName.smartobject
     )) as storage.Folder;
+
+    this.textureFolder = (await folder.getEntry(
+      FolderName.texture
+    )) as storage.Folder;
+
+    this.gigaPixelFolder = (await folder.getEntry(
+      FolderName.gigapixel
+    )) as storage.Folder;
+
+    const comfyui = (await folder.getEntry(
+      FolderName.comfyui2024
+    )) as storage.Folder;
+    const comfyui_input = await comfyui.getEntry("input");
+    const comfyui_output = await comfyui.getEntry("output");
+    try {
+      this.comfyuiInputFolder = comfyui_input as storage.Folder;
+      this.comfyuiOutputFolder = comfyui_output as storage.Folder;
+    } catch (error) {
+      console.error(error);
+    }
 
     this.customScripts = (await this.customScriptFolder.getEntries())
       .reduce((acc, ext) => {
@@ -50,6 +98,17 @@ export class PSWorker {
       .map((cs) => cs.name);
 
     this.scriptExecutor.initHelper(this.customScriptFolder);
+  }
+
+  async setBounds(bounds: SelectionBound) {
+    this.selectionBounds = bounds;
+  }
+
+  async removeGuide() {
+    if (this.guideTimer) clearTimeout(this.guideTimer);
+    this.guideTimer = setTimeout(async () => {
+      await removeGuides();
+    }, 2000);
   }
   async do(content: SocketServerData) {
     switch (content.type) {
@@ -80,26 +139,20 @@ export class PSWorker {
         }
 
         break;
-      case "fromcomfy":
-        break;
-      case "todo_clipboard":
-        break;
+
       case "generate_flag":
       case "create_emblem":
       case "create_tag":
-        this.rootFolder
-          .getEntry(FolderName.gigapixel)
-          .then((ggp: storage.Folder) => {
-            setTimeout(async () => {
-              const namafile = content?.data?.split(/[\/\\]+/).pop();
-              const _fileentry = (await ggp
-                .getEntry(namafile)
-                .catch((e) => console.error(e))) as storage.File;
-              await appendLinkedObject(_fileentry, namafile);
-            }, 500);
-          });
+        showLoading(true);
+        const namafile = content?.data?.split(/[\/\\]+/).pop();
+        const _fileentry = (await this.gigaPixelFolder
+          .getEntry(namafile)
+          .catch((e) => console.error(e))) as storage.File;
+        await appendLinkedObject(_fileentry, namafile);
+        showLoading(false);
         break;
       case "create_smartobject":
+        showLoading(true);
         const name = content.data;
         const new_name = await currentLayerToSmartObject(
           this.smartObjectFolder,
@@ -112,25 +165,160 @@ export class PSWorker {
             data: new_name,
           });
         }
+        showLoading(false);
         break;
       case "process_rawfilter":
+        showLoading(true);
+        const rawdata = JSON.parse(content.data);
+        console.log(rawdata);
+        const rs = await performRawFilterEffects(
+          RawFilter(
+            rawdata.reduce((a: any, b: any) => {
+              a[b.name] = b.value;
+              return a;
+            }, {})
+          ),
+          "Adobe Camera Raw Filter"
+        );
+        this.serverSocket.sendMessage({
+          fromserver: false,
+          type: "rawfilter_done",
+          data: rs,
+        });
+        showLoading(false);
         break;
       case "apply_tag_layer":
+        const tagName = content.data;
+        let tag_layers: any;
+        multiGet().then((r) => {
+          const all_layers = r[0].list;
+          const which = all_layers.find((l: any) => l.name == "TAG");
+          if (which) {
+            tag_layers = [{ name: "None", object: null }].concat(
+              getAllTags().map((e) => {
+                return { name: e.name, object: e };
+              })
+            );
+          } else {
+            tag_layers = [{ name: "None", object: null }];
+          }
+        });
+        if (tag_layers) {
+          core.executeAsModal(
+            async (c, d) => {
+              for (const layer of tag_layers) {
+                if (layer) layer.visible = layer.name == tagName ? true : false;
+              }
+            },
+            { commandName: "show Tag" }
+          );
+        }
+
         break;
       case "apply_color":
+        const cd = JSON.parse(content.data);
+        await performApplyColor(cd);
+        this.removeGuide();
+
         break;
       case "append_image":
+        showLoading(true);
+        const response: LinkedObject = JSON.parse(content.data);
+
+        switch (response.type) {
+          case "smartobject":
+            this.smartObjectFolder
+              .getEntry(response.name + ".psb")
+              .then((result: storage.File) => {
+                showLoading(false);
+                appendLinkedObject(result, response.name);
+              });
+            break;
+
+          case "texture":
+            this.textureFolder
+              .getEntry(`${response.category}/${response.name}`)
+              .then((result: storage.File) => {
+                showLoading(false);
+                appendLinkedObject(result, response.name);
+                console.log(result);
+              });
+            break;
+        }
         break;
       case "url":
+        const filename = content?.data?.split("\\").pop();
+        if (filename) {
+          showLoading(true);
+          this.gigaPixelFolder
+            .getEntry(filename)
+            .then((result: storage.File) => {
+              showLoading(false);
+              appendLinkedObject(result, filename);
+            })
+            .catch((e) => console.error(e));
+        }
+
         break;
       case "hotkey":
         this.doHotkeys(content.data);
         break;
       case "from-aiotools-applytemplate":
+        showLoading(true);
+        const tmplt = JSON.parse(content.data);
+        await executeSuspendHistory("apply template", async () => {
+          await performApplyTemplate(this.templatesFolder, tmplt);
+        });
+
+        await performCreateEmblemAndTag(tmplt.lines, this.serverSocket);
+        showLoading(false);
         break;
       case "append_comfyui_output":
+        showLoading(true);
+        const comfyui_name = content.data;
+        this.comfyuiOutputFolder
+          .getEntry(comfyui_name)
+          .then((result: storage.File) => {
+            appendLinkedObjectWithSelection(result, this.selectionBounds);
+          });
+
+        showLoading(false);
+
         break;
       case "selection_to_image":
+        switch (content.data) {
+          case "crop":
+            showLoading(true);
+            selectionToImagePicker(this.comfyuiInputFolder, "CROP").then(
+              (result) => {
+                this.serverSocket.sendMessage({
+                  fromserver: false,
+                  type: "crop_selection",
+                  data: result,
+                  template_index: -1,
+                  uuid: content.uuid,
+                });
+                showLoading(false);
+              }
+            );
+            break;
+
+          case "layer":
+            showLoading(true);
+            selectionToImagePicker(this.comfyuiInputFolder, "LAYER").then(
+              (result) => {
+                this.serverSocket.sendMessage({
+                  fromserver: false,
+                  type: "crop_selection",
+                  data: result,
+                  template_index: -1,
+                  uuid: content.uuid,
+                });
+                showLoading(false);
+              }
+            );
+            break;
+        }
         break;
 
       default:
@@ -152,10 +340,8 @@ export class PSWorker {
     const tagvert = { tag: this.withTag, vertical_align: false };
 
     switch (params) {
-      case "rawfilter":
-        break;
       case "save":
-        //await handleSavingFile();
+        await performSavingFile(this.rootFolder, this.serverSocket);
         break;
       case "newdoc":
         await createNewDocument();
@@ -217,9 +403,7 @@ export class PSWorker {
       case "scalelayer":
         await this.processHotkey(tagvert, HotkeyToken.Scale);
         break;
-      case "deleteandfill":
-        await require("photoshop").core.performMenuCommand({ commandID: 5280 });
-        break;
+
       case "SCALE":
         await this.processHotkey(tagvert, HotkeyToken.Scale);
         break;
@@ -230,7 +414,11 @@ export class PSWorker {
         await this.processHotkey(tagvert, HotkeyToken.ScaleUp);
         break;
       case "SWITCHMARGIN":
-        //await switchMargin();
+        this.withTag = !this.withTag;
+        (
+          document.querySelector(".logger") as HTMLDivElement
+        ).style.paddingLeft = this.withTag ? "25px" : "0px";
+
         break;
       case "SCALEDOWN":
         await this.processHotkey(tagvert, HotkeyToken.ScaleDown);

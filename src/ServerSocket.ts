@@ -1,5 +1,5 @@
 import { PSEventEmitter, PSEvent } from "./PSEvent";
-import { SocketServerData } from "./PSWorker";
+import { SocketServerData } from "./PSWorker/Model";
 
 export class ServerSocket extends PSEventEmitter {
   private socket;

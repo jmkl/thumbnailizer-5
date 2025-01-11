@@ -4,10 +4,11 @@ const fs = storage.localFileSystem;
 
 export async function appendLinkedObject(
   template: storage.File,
-  filename: string
+  filename: string,
+  extract: boolean = false
 ) {
-  return new Promise((resolve, reject) => {
-    core
+  return new Promise(async (resolve, reject) => {
+    await core
       .executeAsModal(
         async () => {
           await action
@@ -26,10 +27,24 @@ export async function appendLinkedObject(
             )
             .catch((e) => {
               console.log(e);
+              reject(e);
             });
+
+          if (extract) {
+            await action.batchPlay(
+              [
+                {
+                  _obj: "placedLayerConvertToLayers",
+                },
+              ],
+              {}
+            );
+          }
           setTimeout(async () => {
             if (filename.includes("0001")) {
               await rasterizeLinkedObject();
+              resolve("Done");
+            } else {
               resolve("Done");
             }
           }, 100);
